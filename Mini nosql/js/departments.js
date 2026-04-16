@@ -1,35 +1,89 @@
 // ==========================================
-// DEPARTMENTS.JS - MONGODB VERSION
+// DEPARTMENTS.JS - WITH LOCALSTORAGE PERSISTENCE
 // ==========================================
 
-let employees = [];
-let departments = [];
+// Load employees from localStorage
+let employees = JSON.parse(localStorage.getItem('companyEmployees')) || [];
 
-document.addEventListener('DOMContentLoaded', async function() {
-    await loadAllData();
+// Initialize departments from localStorage or use default data
+let departments = JSON.parse(localStorage.getItem('companyDepartments')) || [
+    {
+        id: 'DEPT001',
+        name: 'Engineering',
+        manager: 'John Doe',
+        managerEmail: 'john.doe@company.com',
+        managerPhone: '+91 9876543210',
+        budget: 5000000,
+        location: 'Building A, Floor 3',
+        description: 'Software development and technical operations'
+    },
+    {
+        id: 'DEPT002',
+        name: 'Marketing',
+        manager: 'Jane Smith',
+        managerEmail: 'jane.smith@company.com',
+        managerPhone: '+91 9876543220',
+        budget: 3000000,
+        location: 'Building B, Floor 2',
+        description: 'Brand management and market strategy'
+    },
+    {
+        id: 'DEPT003',
+        name: 'Sales',
+        manager: 'Mike Johnson',
+        managerEmail: 'mike.johnson@company.com',
+        managerPhone: '+91 9876543230',
+        budget: 2500000,
+        location: 'Building A, Floor 1',
+        description: 'Sales operations and customer relations'
+    },
+    {
+        id: 'DEPT004',
+        name: 'HR',
+        manager: 'Sarah Williams',
+        managerEmail: 'sarah.williams@company.com',
+        managerPhone: '+91 9876543240',
+        budget: 1500000,
+        location: 'Building B, Floor 1',
+        description: 'Human resources and talent management'
+    },
+    {
+        id: 'DEPT005',
+        name: 'Finance',
+        manager: 'Robert Brown',
+        managerEmail: 'robert.brown@company.com',
+        managerPhone: '+91 9876543250',
+        budget: 2000000,
+        location: 'Building A, Floor 2',
+        description: 'Financial planning and accounting'
+    }
+];
+
+// Save departments to localStorage
+function saveDepartmentsToLocalStorage() {
+    localStorage.setItem('companyDepartments', JSON.stringify(departments));
+    console.log('Departments saved to localStorage:', departments.length);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Departments page loaded!');
+    // If no data in localStorage, save default data
+    if (!localStorage.getItem('companyDepartments')) {
+        saveDepartmentsToLocalStorage();
+    }
+    // Reload employees from localStorage
+    employees = JSON.parse(localStorage.getItem('companyEmployees')) || [];
     loadDepartments();
     setupEventListeners();
 });
 
-// Load all data from API
-async function loadAllData() {
-    try {
-        const [empRes, deptRes] = await Promise.all([
-            API.getAllEmployees(),
-            API.getAllDepartments()
-        ]);
-        if (empRes.success) employees = empRes.data;
-        if (deptRes.success) departments = deptRes.data;
-    } catch (err) {
-        console.error('Error loading data:', err);
-        alert('❌ Failed to connect to server!');
-    }
-}
-
 // Setup Event Listeners
 function setupEventListeners() {
     const addBtn = document.getElementById('addDepartmentBtn');
-    if (addBtn) addBtn.addEventListener('click', openAddDepartmentModal);
+    if (addBtn) {
+        addBtn.addEventListener('click', openAddDepartmentModal);
+    }
 
     setupModalCloseButtons();
 
@@ -55,41 +109,66 @@ function setupModalCloseButtons() {
     const modals = document.querySelectorAll('.modal');
     modals.forEach(modal => {
         const closeBtn = modal.querySelector('.close-btn');
-        if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
     });
+
     window.addEventListener('click', function(e) {
         modals.forEach(modal => {
-            if (e.target === modal) modal.style.display = 'none';
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
         });
     });
 }
 
-// Helper functions
+// Get Employee Count for Department
 function getEmployeeCount(deptName) {
     return employees.filter(emp => emp.department === deptName).length;
 }
-function getActiveEmployeesCount(deptName) {
-    return employees.filter(emp => emp.department === deptName && emp.status === 'active').length;
-}
-function getTotalSalary(deptName) {
-    return employees.filter(emp => emp.department === deptName).reduce((sum, emp) => sum + emp.salary, 0);
-}
+
+// Get Employees by Department
 function getEmployeesByDepartment(deptName) {
     return employees.filter(emp => emp.department === deptName);
 }
 
+// Get Total Salary for Department
+function getTotalSalary(deptName) {
+    return employees
+        .filter(emp => emp.department === deptName)
+        .reduce((sum, emp) => sum + emp.salary, 0);
+}
+
+// Get Active Employees Count
+function getActiveEmployeesCount(deptName) {
+    return employees.filter(emp => emp.department === deptName && emp.status === 'active').length;
+}
+
 // Load Departments
 function loadDepartments() {
+    // Reload latest employees data
+    employees = JSON.parse(localStorage.getItem('companyEmployees')) || [];
     renderDepartments(departments);
 }
 
-// Render Departments
+// Render Departments with REAL employee data
 function renderDepartments(deptList) {
     const container = document.querySelector('.departments-grid');
-    if (!container) return;
+    if (!container) {
+        console.error('Departments grid not found!');
+        return;
+    }
 
     if (deptList.length === 0) {
-        container.innerHTML = `<div class="empty-state"><i class="fas fa-building"></i><p>No departments found</p></div>`;
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-building"></i>
+                <p>No departments found</p>
+            </div>
+        `;
         return;
     }
 
@@ -114,6 +193,7 @@ function renderDepartments(deptList) {
                         </button>
                     </div>
                 </div>
+                
                 <div style="margin: 16px 0;">
                     <p style="color: #64748b; margin-bottom: 8px;"><i class="fas fa-user-tie" style="color: #3256B1; margin-right: 8px;"></i><strong>Manager:</strong> ${dept.manager}</p>
                     <p style="color: #64748b; margin-bottom: 8px;"><i class="fas fa-envelope" style="color: #3256B1; margin-right: 8px;"></i>${dept.managerEmail}</p>
@@ -121,6 +201,7 @@ function renderDepartments(deptList) {
                     <p style="color: #64748b; margin-bottom: 8px;"><i class="fas fa-map-marker-alt" style="color: #3256B1; margin-right: 8px;"></i>${dept.location}</p>
                     <p style="color: #64748b;"><i class="fas fa-info-circle" style="color: #3256B1; margin-right: 8px;"></i>${dept.description}</p>
                 </div>
+
                 <div class="dept-stats">
                     <div class="stat-item">
                         <label>Employees</label>
@@ -135,6 +216,7 @@ function renderDepartments(deptList) {
                         <p style="font-weight: 700; color: #3256B1;">₹${(dept.budget / 100000).toFixed(1)}L</p>
                     </div>
                 </div>
+
                 <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
                     <p style="color: #64748b; font-size: 0.875rem; margin: 0;">
                         <strong>Total Monthly Payroll:</strong> ₹${totalSalary.toLocaleString('en-IN')}
@@ -143,29 +225,46 @@ function renderDepartments(deptList) {
             </div>
         `;
     }).join('');
+
+    console.log('Departments rendered with employee data!');
 }
 
 // View Department Details
 function viewDepartmentDetails(id) {
+    console.log('Viewing department:', id);
     const dept = departments.find(d => d.id === id);
-    if (!dept) return;
+    if (!dept) {
+        console.error('Department not found!');
+        alert('Department not found!');
+        return;
+    }
 
     const modal = document.getElementById('viewDepartmentModal');
-    if (!modal) return;
+    if (!modal) {
+        console.error('View modal not found!');
+        return;
+    }
 
+    // Reload employees from localStorage
+    employees = JSON.parse(localStorage.getItem('companyEmployees')) || [];
+
+    // Get employees in this department
     const deptEmployees = getEmployeesByDepartment(dept.name);
+    const employeeCount = deptEmployees.length;
     const totalSalary = getTotalSalary(dept.name);
 
+    // Populate modal
     document.getElementById('viewDeptId').textContent = dept.id;
     document.getElementById('viewDeptName').textContent = dept.name;
     document.getElementById('viewDeptManager').textContent = dept.manager;
     document.getElementById('viewDeptManagerEmail').textContent = dept.managerEmail;
     document.getElementById('viewDeptManagerPhone').textContent = dept.managerPhone;
-    document.getElementById('viewDeptEmployeeCount').textContent = deptEmployees.length;
+    document.getElementById('viewDeptEmployeeCount').textContent = employeeCount;
     document.getElementById('viewDeptLocation').textContent = dept.location;
     document.getElementById('viewDeptBudget').textContent = '₹' + dept.budget.toLocaleString('en-IN');
     document.getElementById('viewDeptDescription').textContent = dept.description;
 
+    // Show employee list
     const employeeListContainer = document.getElementById('viewDeptEmployees');
     if (deptEmployees.length > 0) {
         employeeListContainer.innerHTML = `
@@ -192,31 +291,52 @@ function viewDepartmentDetails(id) {
                                 </td>
                                 <td>${emp.position}</td>
                                 <td>₹${emp.salary.toLocaleString('en-IN')}</td>
-                                <td><span class="status-badge ${emp.status}">${emp.status === 'active' ? 'Active' : emp.status === 'on-leave' ? 'On Leave' : 'Inactive'}</span></td>
+                                <td>
+                                    <span class="status-badge ${emp.status}">
+                                        ${emp.status === 'active' ? 'Active' : emp.status === 'on-leave' ? 'On Leave' : 'Inactive'}
+                                    </span>
+                                </td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
-                <div style="margin-top:16px;padding:12px;background:#f8fafc;border-radius:8px;">
-                    <p style="margin:0;color:#3256B1;font-weight:600;">Total Monthly Payroll: ₹${totalSalary.toLocaleString('en-IN')}</p>
+                <div style="margin-top: 16px; padding: 12px; background: #f8fafc; border-radius: 8px;">
+                    <p style="margin: 0; color: #3256B1; font-weight: 600;">
+                        Total Monthly Payroll: ₹${totalSalary.toLocaleString('en-IN')}
+                    </p>
                 </div>
             </div>
         `;
     } else {
-        employeeListContainer.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>No employees in this department</p></div>`;
+        employeeListContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>No employees in this department</p>
+            </div>
+        `;
     }
 
     modal.style.display = 'block';
+    console.log('View modal opened!');
 }
 
 // Edit Department
 function editDepartmentDetails(id) {
+    console.log('Editing department:', id);
     const dept = departments.find(d => d.id === id);
-    if (!dept) return;
+    if (!dept) {
+        console.error('Department not found!');
+        alert('Department not found!');
+        return;
+    }
 
     const modal = document.getElementById('editDepartmentModal');
-    if (!modal) return;
+    if (!modal) {
+        console.error('Edit modal not found!');
+        return;
+    }
 
+    // Populate form
     document.getElementById('editDepartmentId').value = dept.id;
     document.getElementById('editDeptName').value = dept.name;
     document.getElementById('editManager').value = dept.manager;
@@ -227,18 +347,36 @@ function editDepartmentDetails(id) {
     document.getElementById('editDescription').value = dept.description;
 
     modal.style.display = 'block';
+    console.log('Edit modal opened!');
 }
 
-// Update Department - API Call
-async function updateDepartment() {
+// Update Department - WITH LOCALSTORAGE
+function updateDepartment() {
+    console.log('Updating department...');
     const form = document.getElementById('editDepartmentForm');
-    if (!form) return;
+    if (!form) {
+        console.error('Form not found!');
+        return;
+    }
 
     const id = document.getElementById('editDepartmentId').value;
-    const formData = new FormData(form);
+    const index = departments.findIndex(d => d.id === id);
+    
+    if (index === -1) {
+        console.error('Department not found!');
+        alert('Department not found!');
+        return;
+    }
 
-    const updatedDept = {
-        name: formData.get('name'),
+    const formData = new FormData(form);
+    
+    // Check if name changed
+    const oldName = departments[index].name;
+    const newName = formData.get('name');
+    
+    departments[index] = {
+        ...departments[index],
+        name: newName,
         manager: formData.get('manager'),
         managerEmail: formData.get('managerEmail'),
         managerPhone: formData.get('managerPhone'),
@@ -247,37 +385,47 @@ async function updateDepartment() {
         description: formData.get('description')
     };
 
-    try {
-        const res = await API.updateDepartment(id, updatedDept);
-        if (res.success) {
-            document.getElementById('editDepartmentModal').style.display = 'none';
-            await loadAllData();
-            loadDepartments();
-            alert('✅ Department updated successfully!');
-        } else {
-            alert('❌ Error: ' + res.message);
-        }
-    } catch (err) {
-        alert('❌ Failed to connect to server!');
+    console.log('Department updated:', departments[index]);
+
+    // If department name changed, update all employees in that department
+    if (oldName !== newName) {
+        employees = JSON.parse(localStorage.getItem('companyEmployees')) || [];
+        employees.forEach(emp => {
+            if (emp.department === oldName) {
+                emp.department = newName;
+            }
+        });
+        localStorage.setItem('companyEmployees', JSON.stringify(employees));
+        console.log('Updated employee departments from', oldName, 'to', newName);
     }
+
+    // SAVE TO LOCALSTORAGE
+    saveDepartmentsToLocalStorage();
+
+    document.getElementById('editDepartmentModal').style.display = 'none';
+    loadDepartments();
+    alert('✅ Department updated successfully and saved!');
 }
 
 // Open Add Department Modal
 function openAddDepartmentModal() {
     const modal = document.getElementById('addDepartmentModal');
     if (modal) {
-        document.getElementById('addDepartmentForm').reset();
+        const form = document.getElementById('addDepartmentForm');
+        if (form) form.reset();
         modal.style.display = 'block';
     }
 }
 
-// Add Department - API Call
-async function addDepartment() {
+// Add Department - WITH LOCALSTORAGE
+function addDepartment() {
     const form = document.getElementById('addDepartmentForm');
     if (!form) return;
 
     const formData = new FormData(form);
+    
     const newDept = {
+        id: generateDepartmentId(),
         name: formData.get('name'),
         manager: formData.get('manager'),
         managerEmail: formData.get('managerEmail'),
@@ -292,42 +440,57 @@ async function addDepartment() {
         return;
     }
 
-    try {
-        const res = await API.addDepartment(newDept);
-        if (res.success) {
-            document.getElementById('addDepartmentModal').style.display = 'none';
-            await loadAllData();
-            loadDepartments();
-            alert('✅ Department added successfully!');
-            form.reset();
-        } else {
-            alert('❌ Error: ' + res.message);
-        }
-    } catch (err) {
-        alert('❌ Failed to connect to server!');
-    }
+    departments.push(newDept);
+    
+    // SAVE TO LOCALSTORAGE
+    saveDepartmentsToLocalStorage();
+    
+    document.getElementById('addDepartmentModal').style.display = 'none';
+    loadDepartments();
+    alert('✅ Department added successfully! It will now appear in all dropdowns.');
+    form.reset();
 }
 
-// Delete Department - API Call
-async function deleteDepartmentConfirm(id) {
+// Generate Department ID
+function generateDepartmentId() {
+    const maxId = departments.reduce((max, dept) => {
+        const num = parseInt(dept.id.replace('DEPT', ''));
+        return num > max ? num : max;
+    }, 0);
+    
+    return 'DEPT' + String(maxId + 1).padStart(3, '0');
+}
+
+// Delete Department - FIXED WITH LOCALSTORAGE
+function deleteDepartmentConfirm(id) {
+    console.log('Delete requested for:', id);
+    const dept = departments.find(d => d.id === id);
+    if (!dept) return;
+
+    // Reload employees from localStorage
+    employees = JSON.parse(localStorage.getItem('companyEmployees')) || [];
+    
+    const employeeCount = getEmployeeCount(dept.name);
+    
+    if (employeeCount > 0) {
+        alert(`⚠️ Cannot delete ${dept.name}! This department has ${employeeCount} employees. Please reassign them first.`);
+        return;
+    }
+
     if (confirm('Are you sure you want to delete this department?')) {
-        try {
-            const res = await API.deleteDepartment(id);
-            if (res.success) {
-                await loadAllData();
-                loadDepartments();
-                alert('✅ Department deleted successfully!');
-            } else {
-                alert('❌ ' + res.message);
-            }
-        } catch (err) {
-            alert('❌ Failed to connect to server!');
-        }
+        departments = departments.filter(d => d.id !== id);
+        
+        // SAVE TO LOCALSTORAGE
+        saveDepartmentsToLocalStorage();
+        
+        loadDepartments();
+        alert('✅ Department deleted successfully!');
     }
 }
 
+// Export functions to global scope
 window.viewDepartmentDetails = viewDepartmentDetails;
 window.editDepartmentDetails = editDepartmentDetails;
 window.deleteDepartmentConfirm = deleteDepartmentConfirm;
 
-console.log('departments.js loaded - MongoDB version!');
+console.log('departments.js loaded successfully with localStorage!');
